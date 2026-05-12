@@ -1,5 +1,5 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { useLoaderData, useSubmit, useNavigation } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
@@ -45,7 +45,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if (intent === "refreshFx") {
-    // Placeholder — will call customs.go.jp API
     await db.taxSettings.update({
       where: { shop },
       data: { fxRate: 152, fxUpdatedAt: new Date(), updatedAt: new Date() },
@@ -95,7 +94,6 @@ export default function Index() {
       <form onSubmit={handleSave}>
         <input type="hidden" name="intent" value="save" />
 
-        {/* Threshold */}
         <div style={cardStyle}>
           <div style={cardLabelStyle}>Threshold & FX Rate</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -120,7 +118,6 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Tax Rates */}
         <div style={cardStyle}>
           <div style={cardLabelStyle}>Tax Rates</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
@@ -141,7 +138,6 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Checkout preview */}
           <div style={{ background: "#f9f9f9", border: "1px solid #eee", borderRadius: 8, marginTop: 16, overflow: "hidden" }}>
             <div style={{ background: "#f0f0f0", padding: "6px 12px", fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Customer checkout preview · $130 cart
@@ -161,7 +157,6 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Toggle */}
         <div style={cardStyle}>
           <div style={cardLabelStyle}>Feature Control</div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -175,7 +170,6 @@ export default function Index() {
               <span style={{
                 position: "absolute", inset: 0, borderRadius: 999, cursor: "pointer",
                 background: settings.enabled ? "#1D9E75" : "#ccc",
-                transition: "background 0.2s"
               }} />
             </label>
           </div>
