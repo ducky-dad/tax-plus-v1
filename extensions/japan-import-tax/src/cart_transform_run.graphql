@@ -1,0 +1,22 @@
+query CartTransformRunInput {
+  cart {
+    attribute(key: "_tax_settings") {
+      value
+    }
+    lines {
+      id
+      quantity
+      cost {
+        amountPerQuantity {
+          amount
+          currencyCode
+        }
+      }
+      merchandise {
+        ... on ProductVariant {
+          id
+        }
+      }
+    }
+  }
+}
