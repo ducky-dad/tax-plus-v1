@@ -164,12 +164,12 @@ export default function Index() {
               <div style={{ fontSize: 14 }}>Enable tax collection</div>
               <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>Activates Cart Transform — customers will see 3 tax lines at checkout</div>
             </div>
-            <label style={{ position: "relative", width: 38, height: 22, flexShrink: 0 }}>
+            <label style={{ position: "relative", width: 38, height: 22, flexShrink: 0, display: "inline-block" }}>
               <input type="checkbox" name="enabled" value="true" defaultChecked={settings.enabled}
-                style={{ opacity: 0, width: 0, height: 0 }} />
+                style={{ opacity: 0, width: "100%", height: "100%", position: "absolute", inset: 0, cursor: "pointer", margin: 0, zIndex: 1 }} />
               <span style={{
                 position: "absolute", inset: 0, borderRadius: 999, cursor: "pointer",
-                background: settings.enabled ? "#1D9E75" : "#ccc",
+                background: settings.enabled ? "#1D9E75" : "#ccc", pointerEvents: "none" as const,
               }} />
             </label>
           </div>
