@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useSubmit, useNavigation } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
@@ -12,7 +12,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       data: { shop, enabled: false, threshold: 10000, kanzeiRate: 3, shohizeiRate: 10, tesuryo: 3, fxRate: 152 },
     });
   }
-  return json({ settings });
+  return Response.json({ settings });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -51,7 +51,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
   }
 
-  return json({ ok: true });
+  return Response.json({ ok: true });
 };
 
 export default function Index() {
