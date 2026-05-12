@@ -8,16 +8,16 @@ const NO_CHANGES: CartTransformRunResult = { operations: [] };
 
 interface TaxSettings {
   enabled?: boolean;
-  threshold?: number;   // USD
-  kanzeiRate?: number;  // percent, e.g. 3 = 3%
-  shohizeiRate?: number;// percent, e.g. 10 = 10%
-  tesuryo?: number;     // flat USD fee
+  threshold?: number;
+  kanzeiRate?: number;
+  shohizeiRate?: number;
+  tesuryo?: number;
 }
 
 export function cartTransformRun(
   input: CartTransformRunInput
 ): CartTransformRunResult {
-  // 1. Parse settings from cart attribute
+  // Parse settings
   let settings: TaxSettings = {};
   try {
     const raw = input.cart.attribute?.value;
@@ -36,82 +36,83 @@ export function cartTransformRun(
 
   if (!enabled) return NO_CHANGES;
 
-  // 2. Sum cart subtotal in store currency (USD)
+  // Find first line that is a ProductVariant (has an id we can use)
+  const firstLine = input.cart.lines.find(
+    (line) => line.merchandise.__typename === "ProductVariant"
+  );
+  if (!firstLine) return NO_CHANGES;
+
+  const merchandiseId =
+    firstLine.merchandise.__typename === "ProductVariant"
+      ? firstLine.merchandise.id
+      : null;
+  if (!merchandiseId) return NO_CHANGES;
+
+  // Calculate subtotal
   const subtotal = input.cart.lines.reduce((sum, line) => {
     return sum + parseFloat(line.cost.amountPerQuantity.amount) * line.quantity;
   }, 0);
 
   if (subtotal < threshold) return NO_CHANGES;
 
-  // 3. We need an existing line to expand — use the first line
-  const firstLine = input.cart.lines[0];
-  if (!firstLine) return NO_CHANGES;
-
-  const currency = firstLine.cost.amountPerQuantity.currencyCode;
-
-  // 4. Build the expanded items — the original item first, then tax lines
-  // kanzei and shohizei are percentages; tesuryo is a flat fee
-  const kanzeiAmount = parseFloat((subtotal * kanzeiRate / 100).toFixed(2));
+  const unitPrice = parseFloat(firstLine.cost.amountPerQuantity.amount);
+  const kanzeiAmount   = parseFloat((subtotal * kanzeiRate / 100).toFixed(2));
   const shohizeiAmount = parseFloat((subtotal * shohizeiRate / 100).toFixed(2));
-  const tesuryoAmount = parseFloat(tesuryo.toFixed(2));
+  const tesuryoAmount  = parseFloat(Number(tesuryo).toFixed(2));
 
-  // The expand operation requires the original line item's merchandiseId
-  // We reconstruct the original item at its original price, then append tax lines
-  const originalUnitPrice = parseFloat(firstLine.cost.amountPerQuantity.amount);
-
-  const expandedCartItems = [
-    // Original item — keep at its original price
+  // Build expanded items: original item + tax lines
+  const expandedCartItems: {
+    merchandiseId: string;
+    quantity: number;
+    price?: { adjustment: { fixedPricePerUnit: { amount: string } } };
+  }[] = [
+    // Original line at its original price
     {
-      merchandiseId: (firstLine as any).merchandise?.id ?? firstLine.id,
+      merchandiseId,
       quantity: firstLine.quantity,
       price: {
         adjustment: {
-          fixedPricePerUnit: {
-            amount: String(originalUnitPrice),
-          },
+          fixedPricePerUnit: { amount: String(unitPrice) },
         },
       },
     },
-    // 関税
-    ...(kanzeiRate > 0 ? [{
-      merchandiseId: (firstLine as any).merchandise?.id ?? firstLine.id,
-      quantity: 1,
-      title: "関税（輸入関税）",
-      price: {
-        adjustment: {
-          fixedPricePerUnit: {
-            amount: String(kanzeiAmount),
-          },
-        },
-      },
-    }] : []),
-    // 消費税
-    ...(shohizeiRate > 0 ? [{
-      merchandiseId: (firstLine as any).merchandise?.id ?? firstLine.id,
-      quantity: 1,
-      title: "消費税（輸入消費税）",
-      price: {
-        adjustment: {
-          fixedPricePerUnit: {
-            amount: String(shohizeiAmount),
-          },
-        },
-      },
-    }] : []),
-    // 手数料
-    ...(tesuryoAmount > 0 ? [{
-      merchandiseId: (firstLine as any).merchandise?.id ?? firstLine.id,
-      quantity: 1,
-      title: "通関手数料",
-      price: {
-        adjustment: {
-          fixedPricePerUnit: {
-            amount: String(tesuryoAmount),
-          },
-        },
-      },
-    }] : []),
   ];
+
+  if (kanzeiRate > 0) {
+    expandedCartItems.push({
+      merchandiseId,
+      quantity: 1,
+      price: {
+        adjustment: {
+          fixedPricePerUnit: { amount: String(kanzeiAmount) },
+        },
+      },
+    });
+  }
+
+  if (shohizeiRate > 0) {
+    expandedCartItems.push({
+      merchandiseId,
+      quantity: 1,
+      price: {
+        adjustment: {
+          fixedPricePerUnit: { amount: String(shohizeiAmount) },
+        },
+      },
+    });
+  }
+
+  if (tesuryoAmount > 0) {
+    expandedCartItems.push({
+      merchandiseId,
+      quantity: 1,
+      price: {
+        adjustment: {
+          fixedPricePerUnit: { amount: String(tesuryoAmount) },
+        },
+      },
+    });
+  }
 
   const operation: Operation = {
     lineExpand: {
